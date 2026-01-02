@@ -1,100 +1,159 @@
-# Naver News Pension Crawler
+# Naver Pension Crawler 🕷️
 
-A robust web crawler for collecting Naver News articles about "국민연금" (National Pension) from sections 100 (Politics), 101 (Economy), and 102 (Society). It collects article metadata, comments (for high-engagement articles), and demographic summaries.
+![Python](https://img.shields.io/badge/Python-3.11-3776AB?style=flat-square&logo=python&logoColor=white)
+![Playwright](https://img.shields.io/badge/Playwright-Async-45ba4b?style=flat-square&logo=playwright&logoColor=white)
+![Hugging Face](https://img.shields.io/badge/Hugging%20Face-Transformers-FFD21E?style=flat-square&logo=huggingface&logoColor=black)
+![License](https://img.shields.io/badge/License-MIT-grey.svg?style=flat-square)
 
-## Features
+## About
 
-- **Targeted Crawling**: Scans specific Naver News sections.
-- **Filtering**: Filters articles by keywords ("국민연금", "국민 연금").
-- **Comment Collection**: Collects comments if count >= 100.
-- **Demographics**: Extracts gender and age distribution for articles.
-- **Polite Crawling**: Random delays and user-agent rotation.
-- **Robustness**: Handles network errors and UI variations.
-- **Data Export**: Saves to CSV (UTF-8 BOM for Excel).
+A high-performance asynchronous crawler designed to collect and analyze public opinion on **pension reform** from Naver News comments, featuring demographic data extraction and sentiment analysis.
 
-## Prerequisites
+## Key Features
 
-- Python 3.11+
-- Playwright
+- 🚀 **Hybrid Crawling Engine**: Intelligently switches between high-speed HTTP/API calls and headless browser (Playwright) to bypass bot protections and render dynamic JS content.
+- 💬 **Massive Comment Collection**: capable of harvesting unlimited comments per article using the specialized Naver Comment API.
+- 📊 **Demographic Extraction**: Scrapes age and gender distribution charts from news articles to contextualize public opinion.
+- 🧠 **Sentiment Analysis**: Integrated **KoELECTRA** model to automatically classify Korean comments into Positive/Negative sentiments with confidence scores.
+- 🛡️ **Robust Error Handling**: Implements exponential backoff, user-agent rotation, and semaphore-based concurrency control to respect rate limits.
 
-## Installation
+## Architecture
 
-1. Create a virtual environment (optional but recommended):
+### System Context (Level 1)
 
-   ```powershell
-   python -m venv venv
-   .\venv\Scripts\activate
-   ```
+The system acts as a bridge between raw Naver News data and the Data Engineer, enriching the data with sentiment intelligence.
 
-2. Install dependencies:
+```mermaid
+C4Context
+    title System Context Diagram for Naver Pension Crawler
 
-   ```powershell
-   pip install -r requirements.txt
-   ```
+    Person(dataEngineer, "Data Engineer", "Configures crawler, runs scripts, and analyzes collected data.")
 
-3. Install Playwright browsers:
-   ```powershell
-   playwright install chromium
-   ```
+    System(crawlerSystem, "Naver Pension Crawler System", "Collects news articles, comments, and demographic statistics related to pension reform.")
 
-## 📜 Project Rules
+    System_Ext(naverNews, "Naver News", "Provides news articles and search functionality.")
+    System_Ext(naverCommentAPI, "Naver Comment API", "Provides user comments and social statistics.")
+    System_Ext(playwright, "Playwright Browser", "Headless browser for rendering dynamic content (charts, JS).")
+    System_Ext(hfModels, "Hugging Face Models", "Provides pre-trained NLP models for sentiment analysis.")
 
-This project follows strict engineering standards defined in [.agent/rules/rules.md](.agent/rules/rules.md).
-**Core principles:**
-
-1. **TDD & SOLID**: All code must comprise unit tests and follow modular design.
-2. **Operational Stability**: Incremental saving and crash recovery are mandatory.
-3. **Async First**: Prefer `aiohttp` for network operations.
-
-## Usage
-
-### standard Run
-
-Run the crawler using the provided batch script:
-
-```powershell
-.\crawl.bat
+    Rel(dataEngineer, crawlerSystem, "Configures & Executes", "CLI / Scripts")
+    Rel(crawlerSystem, naverNews, "Crawls / Scrapes", "HTTP Request / HTML")
+    Rel(crawlerSystem, naverCommentAPI, "Fetches API Data", "JSONP/HTTP")
+    Rel(crawlerSystem, playwright, "Controls", "DevTools Protocol")
+    Rel(crawlerSystem, hfModels, "Downloads & Uses", "Python Library")
+    Rel(crawlerSystem, dataEngineer, "Delivers Data", "JSONL Files")
 ```
 
-Or directly via Python:
+### Containers (Level 2)
 
-```powershell
-python src/main.py
+The system is modularized into efficient Python containers for separation of concerns.
+
+```mermaid
+C4Container
+    title Container Diagram for Naver Pension Crawler System
+
+    Person(dataEngineer, "Data Engineer", "Operates the system")
+
+    System_Boundary(c1, "Naver Pension Crawler System") {
+        Container(crawlerEngine, "Crawler Engine", "Python, aiohttp", "Orchestrates searching and initial parsing of news articles.")
+        Container(finalCollector, "Final Data Collector", "Python, Playwright", "Deep scraping of filtered URLs for comprehensive comment & demographic data.")
+        Container(sentimentAnalyzer, "Sentiment Analyzer", "Python, KoELECTRA, PyTorch", "Performs batch sentiment analysis on collected comments.")
+
+        ContainerDb(rawStorage, "Raw Data Storage", "JSONL Files", "Stores initial crawl results (articles, comments snippet).")
+        ContainerDb(finalStorage, "Final Data Storage", "JSONL Files", "Stores complete dataset including unlimited comments and sentiment scores.")
+        ContainerDb(modelCache, "Model Cache", "Local File System", "Cached Hugging Face pre-trained models.")
+    }
+
+    System_Ext(naverServices, "Naver Services", "News Search, Article Pages, Comment API")
+    System_Ext(hfHub, "Hugging Face Hub", "Model Repository")
+
+    Rel(dataEngineer, crawlerEngine, "Runs search crawler")
+    Rel(dataEngineer, finalCollector, "Runs final collection")
+    Rel(dataEngineer, sentimentAnalyzer, "Runs sentiment analysis")
+
+    Rel(crawlerEngine, naverServices, "Search & Scraping", "HTTP/HTTPS")
+    Rel(crawlerEngine, rawStorage, "Saves intermediate data", "JSONL")
+
+    Rel(finalCollector, rawStorage, "Reads target URLs")
+    Rel(finalCollector, naverServices, "Deep Scraping (API + Browser)", "HTTPS")
+    Rel(finalCollector, finalStorage, "Saves complete data", "JSONL")
+
+    Rel(sentimentAnalyzer, finalStorage, "Reads comments & Appends score", "JSONL")
+    Rel(sentimentAnalyzer, hfHub, "Downloads model", "HTTPS")
+    Rel(sentimentAnalyzer, modelCache, "Caches model", "File I/O")
 ```
 
-### Configuration
+👉 **For more detailed architectural decisions, please refer to the [ADR Records](docs/ADR.md).**
 
-Edit `config/config.yaml` to change parameters:
+## Getting Started
 
-- `articles_per_section`: Number of articles to scan per section.
-- `comment_threshold`: Minimum comments to trigger collection.
-- `keywords`: List of title keywords to filter by.
-- `headless`: Set to `false` to see the browser while crawling.
+### Prerequisites
 
-### Output
+- Python 3.10+
+- Chrome/Chromium (installed via Playwright)
 
-Data is saved to `C:/Users/maudi/OneDrive/문서/GPR/`:
+### Installation
 
-- `articles_pension.csv`: Article metadata and demographics.
-- `comments_pension.csv`: Collected comments.
+```bash
+# 1. Clone the repository
+git clone https://github.com/CSY-333/naver_pension_crawler.git
+cd naver_pension_crawler
 
-Logs and run summaries are saved in `logs/`.
+# 2. Install Python dependencies
+pip install -r requirements.txt
 
-## Project Structure
-
+# 3. Install browser binaries
+playwright install
 ```
-naver_pension_crawler/
-├── config/             # Configuration files
-├── logs/               # Run logs and JSON summaries
-├── src/                # Source code
-│   ├── crawler.py      # Main crawler logic
-│   ├── parsers.py      # HTML parsing logic
-│   ├── selectors.py    # CSS selectors
-│   ├── storage.py      # CSV export logic
-│   ├── report.py       # Reporting module
-│   └── main.py         # Entry point
-├── tests/              # Tests
-├── requirements.txt    # Dependencies
-├── crawl.bat           # Execution script
-└── README.md           # Documentation
+
+### Usage
+
+1.  **Collect Data**:
+
+    ```bash
+    # Run the final data collection script
+    py src/collect_final_data.py
+    ```
+
+    This will read URLs from `GPR_URLS/stats_urls.jsonl` and save results to `GPR_FINAL/`.
+
+2.  **Analyze Sentiment**:
+    ```bash
+    # Run the sentiment analysis script
+    py src/analyze_sentiment.py
+    ```
+    This processes the latest comment file in `GPR_FINAL/` and appends sentiment labels.
+
+## Data Example
+
+### Input (URL List)
+
+```json
+{
+  "url": "https://n.news.naver.com/...",
+  "date": "2024.01.01",
+  "keyword": "국민연금"
+}
 ```
+
+### Output (Sentiment Analyzed Comment)
+
+```json
+{
+  "comment_id": "123456789",
+  "comment_text": "연금 개혁 반드시 필요합니다.",
+  "author": "user****",
+  "sentiment_label": "1",
+  "sentiment_score": 0.9876
+}
+```
+
+- `sentiment_label`: `1` (Positive), `0` (Negative)
+
+## Tech Stack
+
+- **Language**: Python 3.11
+- **Crawling**: `aiohttp` (Async HTTP), `playwright` (Browser Automation), `beautifulsoup4`
+- **NLP / ML**: `transformers` (Hugging Face), `torch` (PyTorch)
+- **Model**: [jaehyeong/koelectra-base-v3-generalized-sentiment-analysis](https://huggingface.co/jaehyeong/koelectra-base-v3-generalized-sentiment-analysis)
+- **Data**: JSONL (JSON Lines) for efficient large-scale storage
