@@ -1,0 +1,10 @@
+__pycache__/
+*.pyc
+logs/
+GPR_FINAL/
+GPR_URLS/
+*.jsonl
+*.log
+.env
+.venv/
+video/

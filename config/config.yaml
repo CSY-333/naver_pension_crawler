@@ -1,0 +1,42 @@
+search:
+  keywords:
+    - "국민연금"
+  max_pages: 1000 # Increased to find 500 qualified articles due to strict filtering
+  sort_method: 0 # Relevance (or 1 for Latest)
+  start_date: "2024.01.01"
+  end_date: "2024.12.31"
+
+  low_drop_ratio: 0.5 # Trigger fallback if results drop by 50% vs previous page
+  http_retry_on_low: 1 # Retry HTTP once before fallback
+  low_streak_trigger: 2 # Fallback after 2 low-result pages
+  force_http: true # Prefer HTTP parsing over Playwright for search
+
+crawler:
+  headless: false
+  request_delay_min: 0.5
+  request_delay_max: 2.0
+  retry_attempts: 3
+  user_agent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0.0.0 Safari/537.36"
+  page_load_timeout: 30000
+  http_total_timeout: 30000
+  article_sem: 5 # Concurrent articles processed (Semaphore)
+  page_sem: 10 # Concurrent API pages (Semaphore)
+  stop_on_403_run: true # Stop run if 403 Forbidden is encountered multiple times
+  max_retry_429: 3
+  max_retry_5xx: 3
+  backoff_base: 2.0
+
+filters:
+  keywords:
+    - "국민연금"
+  comment_threshold: 10
+  max_comments: 300
+  max_articles: 500 # Target number of collected articles now
+  store_min_rows: true
+  demographics_ui_fallback: true # Fallback to UI parsing if API/Social missing
+
+storage:
+  output_dir: "GPR"
+  articles_filename: "articles_pension.jsonl"
+  comments_filename: "comments_pension.jsonl"
+  encoding: "utf-8"

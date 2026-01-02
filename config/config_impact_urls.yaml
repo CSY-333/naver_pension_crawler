@@ -1,0 +1,50 @@
+search:
+  keywords:
+    - "국민연금"
+    - "연금 개혁"
+  max_pages: 1000
+  sort_method: 1 # Latest
+  # Period: 2024.12.20 ~ 2025.06.20 (+/- 3 months from 2025.03.20)
+  start_date: "2024.12.20"
+  end_date: "2025.06.20"
+
+  low_drop_ratio: 0.5
+  http_retry_on_low: 1
+  low_streak_trigger: 2
+  force_http: true
+
+crawler:
+  headless: false
+  request_delay_min: 0.5
+  request_delay_max: 2.0
+  retry_attempts: 3
+  # User Agent (Chrome Windows)
+  user_agent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0.0.0 Safari/537.36"
+  page_load_timeout: 30000
+  http_total_timeout: 30000
+  article_sem: 5
+  page_sem: 10
+  stop_on_403_run: true
+  max_retry_429: 3
+  max_retry_5xx: 3
+  backoff_base: 2.0
+  # [NEW] Meta-Only Mode (Requested)
+  only_urls: true
+
+filters:
+  keywords:
+    - "국민연금"
+  comment_threshold: 10
+  max_comments: 10 # Not used for collection, but maybe for API check limit
+  max_articles: 10000 # Collect as many URLs as possible
+  store_min_rows: true
+  demographics_ui_fallback: true # Must check stat graph availability
+
+storage:
+  output_dir: "GPR_IMPACT_URLS"
+  articles_filename: "articles_impact_meta.jsonl"
+  comments_filename: "comments_impact_dummy.jsonl" # Should not be created
+  encoding: "utf-8"
+  unique_batch_files: true
+  batch_size: 50 # Larger batch since only meta
+  tmp_suffix: ".tmp"

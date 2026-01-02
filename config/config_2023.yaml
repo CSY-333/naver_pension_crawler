@@ -1,0 +1,42 @@
+search:
+  keywords:
+    - "국민연금"
+  max_pages: 1000 # Increased to match production settings
+  sort_method: 0
+  start_date: "2023.01.01"
+  end_date: "2023.12.31"
+
+  low_drop_ratio: 0.5
+  http_retry_on_low: 1
+  low_streak_trigger: 2
+  force_http: true
+
+crawler:
+  headless: false # Matches active run for stability
+  request_delay_min: 0.5
+  request_delay_max: 2.0
+  retry_attempts: 3
+  user_agent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0.0.0 Safari/537.36"
+  page_load_timeout: 30000
+  http_total_timeout: 30000
+  article_sem: 5
+  page_sem: 10
+  stop_on_403_run: true
+  max_retry_429: 3
+  max_retry_5xx: 3
+  backoff_base: 2.0
+
+filters:
+  keywords:
+    - "국민연금"
+  comment_threshold: 10
+  max_comments: 300
+  max_articles: 500
+  store_min_rows: true
+  demographics_ui_fallback: true
+
+storage:
+  output_dir: "GPR_2023" # Isolated directory
+  articles_filename: "articles_pension_2023.jsonl" # Distinct filename
+  comments_filename: "comments_pension_2023.jsonl"
+  encoding: "utf-8"
