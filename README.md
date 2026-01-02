@@ -138,10 +138,10 @@ We utilize `koelectra-base-v3-generalized-sentiment-analysis`, a model fine-tune
 
 ```mermaid
 graph TD
-    Input[Comment: "연금 개혁 꼭 필요합니다!"] --> Tokenizer[KoELECTRA Tokenizer]
-    Tokenizer -->|Encoding| Model[Pre-trained KoELECTRA-v3]
-    Model -->|Feature Extraction| Classifier[Linear Layer]
-    Classifier -->|Softmax| Output{Positive: 98.7%}
+    Input["댓글: '연금 개혁 꼭 필요합니다!'"] --> Tokenizer["KoELECTRA Tokenizer"]
+    Tokenizer -->|Encoding| Model["Pre-trained KoELECTRA-v3"]
+    Model -->|Feature Extraction| Classifier["Linear Layer"]
+    Classifier -->|Softmax| Output{"긍정: 98.7%"}
 
     style Input fill:#fff,stroke:#333
     style Output fill:#ffe,stroke:#f66,stroke-width:2px
