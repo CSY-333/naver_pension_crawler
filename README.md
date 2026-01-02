@@ -2,158 +2,195 @@
 
 ![Python](https://img.shields.io/badge/Python-3.11-3776AB?style=flat-square&logo=python&logoColor=white)
 ![Playwright](https://img.shields.io/badge/Playwright-Async-45ba4b?style=flat-square&logo=playwright&logoColor=white)
-![Hugging Face](https://img.shields.io/badge/Hugging%20Face-Transformers-FFD21E?style=flat-square&logo=huggingface&logoColor=black)
+![Hugging Face](https://img.shields.io/badge/Hugging%20Face-KoELECTRA-FFD21E?style=flat-square&logo=huggingface&logoColor=black)
 ![License](https://img.shields.io/badge/License-MIT-grey.svg?style=flat-square)
 
-## About
+## 📖 About
 
-A high-performance asynchronous crawler designed to collect and analyze public opinion on **pension reform** from Naver News comments, featuring demographic data extraction and sentiment analysis.
+**Naver Pension Crawler** is a high-performance **async data engineering pipeline** designed to extract, refine, and analyze public opinion on **pension reform**. It bridges the gap between raw web data and actionable intelligence by combining a hybrid crawler with a state-of-the-art sentiment analysis model.
 
-## Key Features
+---
 
-- 🚀 **Hybrid Crawling Engine**: Intelligently switches between high-speed HTTP/API calls and headless browser (Playwright) to bypass bot protections and render dynamic JS content.
-- 💬 **Massive Comment Collection**: capable of harvesting unlimited comments per article using the specialized Naver Comment API.
-- 📊 **Demographic Extraction**: Scrapes age and gender distribution charts from news articles to contextualize public opinion.
-- 🧠 **Sentiment Analysis**: Integrated **KoELECTRA** model to automatically classify Korean comments into Positive/Negative sentiments with confidence scores.
-- 🛡️ **Robust Error Handling**: Implements exponential backoff, user-agent rotation, and semaphore-based concurrency control to respect rate limits.
+## 🏗️ Architecture
 
-## Architecture
+This project goes beyond simple scraping, implementing a robust **Data Engineering Pipeline** that ensures stability, scalability, and data integrity.
 
-### System Context (Level 1)
+### 1. Data Pipeline Overview
 
-The system acts as a bridge between raw Naver News data and the Data Engineer, enriching the data with sentiment intelligence.
+From raw extraction to intelligence generation, the data flows through strict phases.
 
 ```mermaid
-C4Context
-    title System Context Diagram for Naver Pension Crawler
+graph LR
+    subgraph "Phase 1: Extraction"
+        A[Naver News] -->|HTTP/Playwright| B(Raw HTML/JSON)
+    end
 
-    Person(dataEngineer, "Data Engineer", "Configures crawler, runs scripts, and analyzes collected data.")
+    subgraph "Phase 2: Refinement"
+        B --> C{Data Cleaner}
+        C -->|Deduplication| D[Cleaned Data]
+        C -->|Filtering| D
+    end
 
-    System(crawlerSystem, "Naver Pension Crawler System", "Collects news articles, comments, and demographic statistics related to pension reform.")
+    subgraph "Phase 3: Intelligence"
+        D --> E[KoELECTRA Model]
+        E --> F[Sentiment Labeled Data]
+    end
 
-    System_Ext(naverNews, "Naver News", "Provides news articles and search functionality.")
-    System_Ext(naverCommentAPI, "Naver Comment API", "Provides user comments and social statistics.")
-    System_Ext(playwright, "Playwright Browser", "Headless browser for rendering dynamic content (charts, JS).")
-    System_Ext(hfModels, "Hugging Face Models", "Provides pre-trained NLP models for sentiment analysis.")
+    subgraph "Phase 4: Storage"
+        F --> G[(Final JSONL Archive)]
+    end
 
-    Rel(dataEngineer, crawlerSystem, "Configures & Executes", "CLI / Scripts")
-    Rel(crawlerSystem, naverNews, "Crawls / Scrapes", "HTTP Request / HTML")
-    Rel(crawlerSystem, naverCommentAPI, "Fetches API Data", "JSONP/HTTP")
-    Rel(crawlerSystem, playwright, "Controls", "DevTools Protocol")
-    Rel(crawlerSystem, hfModels, "Downloads & Uses", "Python Library")
-    Rel(crawlerSystem, dataEngineer, "Delivers Data", "JSONL Files")
+    style B fill:#f96,stroke:#333,stroke-width:2px,color:white
+    style D fill:#6cf,stroke:#333,stroke-width:2px,color:black
+    style F fill:#9f6,stroke:#333,stroke-width:2px,color:black
+    style G fill:#fff,stroke:#333,stroke-width:2px,color:black
 ```
 
-### Containers (Level 2)
+### 2. System Interaction (Sequence Diagram)
 
-The system is modularized into efficient Python containers for separation of concerns.
+How the components interact asynchronously to ensure non-blocking performance.
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant DE as Data Engineer
+    participant CE as Crawler Engine (Async)
+    participant PW as Playwright (Browser)
+    participant API as Naver Comment API
+    participant SA as Sentiment Analyzer
+
+    Note over DE, CE: 1. Collection Phase
+    DE->>CE: Execute Collection Script
+    CE->>PW: Request News Page (Demographics)
+    PW-->>CE: Return Rendered HTML/Canvas
+
+    loop Pagination
+        CE->>API: Async Request (Batch Process)
+        API-->>CE: Return JSON Stream
+    end
+
+    CE->>CE: Stream Save to JSONL
+
+    Note over DE, SA: 2. Analysis Phase
+    DE->>SA: Trigger Sentiment Analysis
+    SA->>SA: Load KoELECTRA-v3 Model
+
+    loop Streaming Batches
+        SA->>SA: Tokenize & Inference (GPU/CPU)
+        SA-->>DE: Append Result to Final Archive
+    end
+```
+
+### 3. C4 Container Diagram
+
+A high-level view of the system containers and their responsibilities.
 
 ```mermaid
 C4Container
     title Container Diagram for Naver Pension Crawler System
 
-    Person(dataEngineer, "Data Engineer", "Operates the system")
-
     System_Boundary(c1, "Naver Pension Crawler System") {
-        Container(crawlerEngine, "Crawler Engine", "Python, aiohttp", "Orchestrates searching and initial parsing of news articles.")
-        Container(finalCollector, "Final Data Collector", "Python, Playwright", "Deep scraping of filtered URLs for comprehensive comment & demographic data.")
-        Container(sentimentAnalyzer, "Sentiment Analyzer", "Python, KoELECTRA, PyTorch", "Performs batch sentiment analysis on collected comments.")
+        Container(crawlerEngine, "Crawler Engine", "Python, aiohttp", "Hybrid orchestration of HTTP/API calls.")
+        Container(finalCollector, "Final Data Collector", "Python, Playwright", "Deep scraping engine for comprehensive data.")
+        Container(sentimentAnalyzer, "Sentiment Analyzer", "PyTorch, KoELECTRA", "NLP engine for sentiment classification.")
 
-        ContainerDb(rawStorage, "Raw Data Storage", "JSONL Files", "Stores initial crawl results (articles, comments snippet).")
-        ContainerDb(finalStorage, "Final Data Storage", "JSONL Files", "Stores complete dataset including unlimited comments and sentiment scores.")
-        ContainerDb(modelCache, "Model Cache", "Local File System", "Cached Hugging Face pre-trained models.")
+        ContainerDb(finalStorage, "Data Archive", "JSONL Files", "Structured storage for 40k+ records.")
     }
 
-    System_Ext(naverServices, "Naver Services", "News Search, Article Pages, Comment API")
+    System_Ext(naverServices, "Naver Services", "News & Comment Ecosystem")
     System_Ext(hfHub, "Hugging Face Hub", "Model Repository")
 
-    Rel(dataEngineer, crawlerEngine, "Runs search crawler")
-    Rel(dataEngineer, finalCollector, "Runs final collection")
-    Rel(dataEngineer, sentimentAnalyzer, "Runs sentiment analysis")
-
-    Rel(crawlerEngine, naverServices, "Search & Scraping", "HTTP/HTTPS")
-    Rel(crawlerEngine, rawStorage, "Saves intermediate data", "JSONL")
-
-    Rel(finalCollector, rawStorage, "Reads target URLs")
-    Rel(finalCollector, naverServices, "Deep Scraping (API + Browser)", "HTTPS")
-    Rel(finalCollector, finalStorage, "Saves complete data", "JSONL")
-
-    Rel(sentimentAnalyzer, finalStorage, "Reads comments & Appends score", "JSONL")
-    Rel(sentimentAnalyzer, hfHub, "Downloads model", "HTTPS")
-    Rel(sentimentAnalyzer, modelCache, "Caches model", "File I/O")
+    Rel(crawlerEngine, naverServices, "Scrapes")
+    Rel(finalCollector, naverServices, "Deep Scrapes")
+    Rel(sentimentAnalyzer, hfHub, "Downloads Model")
+    Rel(sentimentAnalyzer, finalStorage, "Enriches Data")
 ```
 
-👉 **For more detailed architectural decisions, please refer to the [ADR Records](docs/ADR.md).**
+---
 
-## Getting Started
+## ⚡ Technical Highlights
+
+### 🌊 Memory-Safe Streaming Processing
+
+Processing **40,000+** comments requires efficient memory management. Unlike traditional "Bulk Loading" which can crash systems by loading all data into RAM, this project uses **Python Generators** to treat data as a continuous stream.
+
+```mermaid
+graph TD
+    subgraph "⛔ Bulk Processing (Risky)"
+        All[Load 4GB Data] -->|RAM Overflow| Crash(System Crash 💥)
+    end
+
+    subgraph "✅ Streaming (Optimized)"
+        Stream[Input Stream] -->|Yield Line| Proc[Process 1 Record]
+        Proc -->|Write| Save[Save to Disk]
+        Save -->|Release Memory| Stream
+    end
+
+    style Crash fill:#ff6666,color:white
+    style Save fill:#66ff66,color:black
+```
+
+> This ensures a **Constant Memory Footprint** regardless of dataset size.
+
+### 🧠 Advanced Sentiment Analysis (KoELECTRA)
+
+We utilize `koelectra-base-v3-generalized-sentiment-analysis`, a model fine-tuned on the NSMC dataset, specifically optimized for informal Korean text found in online comments.
+
+```mermaid
+graph TD
+    Input[Comment: "연금 개혁 꼭 필요합니다!"] --> Tokenizer[KoELECTRA Tokenizer]
+    Tokenizer -->|Encoding| Model[Pre-trained KoELECTRA-v3]
+    Model -->|Feature Extraction| Classifier[Linear Layer]
+    Classifier -->|Softmax| Output{Positive: 98.7%}
+
+    style Input fill:#fff,stroke:#333
+    style Output fill:#ffe,stroke:#f66,stroke-width:2px
+```
+
+---
+
+## 🚀 Getting Started
 
 ### Prerequisites
 
 - Python 3.10+
-- Chrome/Chromium (installed via Playwright)
+- `pip` & `git`
 
 ### Installation
 
 ```bash
-# 1. Clone the repository
 git clone https://github.com/CSY-333/naver_pension_crawler.git
 cd naver_pension_crawler
-
-# 2. Install Python dependencies
 pip install -r requirements.txt
-
-# 3. Install browser binaries
 playwright install
 ```
 
 ### Usage
 
-1.  **Collect Data**:
+**1. Collect Data**
 
-    ```bash
-    # Run the final data collection script
-    py src/collect_final_data.py
-    ```
-
-    This will read URLs from `GPR_URLS/stats_urls.jsonl` and save results to `GPR_FINAL/`.
-
-2.  **Analyze Sentiment**:
-    ```bash
-    # Run the sentiment analysis script
-    py src/analyze_sentiment.py
-    ```
-    This processes the latest comment file in `GPR_FINAL/` and appends sentiment labels.
-
-## Data Example
-
-### Input (URL List)
-
-```json
-{
-  "url": "https://n.news.naver.com/...",
-  "date": "2024.01.01",
-  "keyword": "국민연금"
-}
+```bash
+py src/collect_final_data.py
 ```
 
-### Output (Sentiment Analyzed Comment)
+**2. Analyze Sentiment**
 
-```json
-{
-  "comment_id": "123456789",
-  "comment_text": "연금 개혁 반드시 필요합니다.",
-  "author": "user****",
-  "sentiment_label": "1",
-  "sentiment_score": 0.9876
-}
+```bash
+py src/analyze_sentiment.py
 ```
 
-- `sentiment_label`: `1` (Positive), `0` (Negative)
+---
 
-## Tech Stack
+## 🛠️ Tech Stack
 
-- **Language**: Python 3.11
-- **Crawling**: `aiohttp` (Async HTTP), `playwright` (Browser Automation), `beautifulsoup4`
-- **NLP / ML**: `transformers` (Hugging Face), `torch` (PyTorch)
-- **Model**: [jaehyeong/koelectra-base-v3-generalized-sentiment-analysis](https://huggingface.co/jaehyeong/koelectra-base-v3-generalized-sentiment-analysis)
-- **Data**: JSONL (JSON Lines) for efficient large-scale storage
+| Category     | Technology                                |
+| ------------ | ----------------------------------------- |
+| **Language** | Python 3.11                               |
+| **Crawling** | `aiohttp`, `Playwright`, `BeautifulSoup4` |
+| **Data Eng** | `Pandas`, JSONL (Streaming)               |
+| **AI / ML**  | `Hugging Face Transformers`, `PyTorch`    |
+| **Model**    | KoELECTRA-Base-v3 (Generalized Sentiment) |
+
+## 📜 License
+
+This project is licensed under the MIT License.
